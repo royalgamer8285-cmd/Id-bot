@@ -12,7 +12,10 @@ CREATE TABLE IF NOT EXISTS users (
     credits INTEGER DEFAULT 0,
     total_spent INTEGER DEFAULT 0,
     referred_by INTEGER,
-    joined_at TEXT
+    joined_at TEXT,
+    stealth INTEGER DEFAULT 0,
+    lang TEXT DEFAULT 'en',
+    status TEXT DEFAULT 'Guest'
 );
 
 CREATE TABLE IF NOT EXISTS settings (
@@ -63,6 +66,11 @@ async def init_db():
     os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript(CREATE_TABLES)
+        # Migration: add new columns if old DB exists
+        for col, default in [("stealth","0"), ("lang","'en'"), ("status","'Guest'")]:
+            try:
+                await db.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT DEFAULT {default}" if col=="lang" or col=="status" else f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT {default}")
+            except: pass
         for k, v in DEFAULT_SETTINGS.items():
             await db.execute("INSERT OR IGNORE INTO settings(key, value) VALUES(?, ?)", (k, v))
         await db.commit()
@@ -87,7 +95,7 @@ async def ensure_user(user_id, username="", first_name="", referred_by=None):
     async with aiosqlite.connect(DB_PATH) as db:
         try:
             await db.execute("INSERT OR IGNORE INTO users(user_id, username, first_name, credits, joined_at, referred_by) VALUES(?,?,?,?,?,?)",
-                             (user_id, username, first_name, 2, datetime.now().isoformat(), referred_by))
+                             (user_id, username, first_name, 15, datetime.now().isoformat(), referred_by))
             await db.commit()
             # check if inserted (changes)
             cur = await db.execute("SELECT changes()")
