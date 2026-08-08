@@ -34,12 +34,19 @@ a{color:#38bdf8;text-decoration:none;margin-right:12px}
 
 <div class="card">
   <h3>💰 Payment & Price Settings</h3>
-  <form method="POST" action="/settings">
+  <form method="POST" action="/settings" enctype="multipart/form-data">
     <label>💎 Price Per Credit (INR)</label>
     <input name="price_per_credit" value="{{settings.get('price_per_credit','20')}}" required>
     
     <label>🏦 UPI ID (jaise: yourname@upi)</label>
     <input name="upi_id" value="{{settings.get('upi_id','')}}" placeholder="yourname@upi" required>
+    
+    <label>🖼 UPI QR Code (Custom)</label>
+    {% if settings.get('upi_qr_file_id') %}<p style="color:#22c55e;font-size:12px">✅ Custom QR set (File ID: {{settings.get('upi_qr_file_id')[:20]}}...) — Bot me custom QR dikhega. Clear karne ke liye owner panel me 🗑 Clear UPI QR dabao.</p>{% else %}<p style="color:#f59e0b;font-size:12px">⚠️ No custom QR — Auto-generated QR shown. Bot me 🖼 Set UPI QR se photo bhejo to custom QR lagega.</p>{% endif %}
+    <div style="background:#0f172a;padding:12px;border-radius:10px;border:1px dashed #334155;margin-bottom:12px">
+      <input type="file" name="upi_qr" accept="image/*" style="padding:8px">
+      <p style="font-size:11px;color:#64748b;margin:4px 0 0">Upload new QR image (PNG/JPG) — Web se upload karoge toh bot me custom QR ban jayega. Bot me photo bhejna zyada easy hai.</p>
+    </div>
     
     <label>💵 USDT TRC20 Address (Tron Network)</label>
     <input name="usdt_trc20" value="{{settings.get('usdt_trc20','')}}" placeholder="TX..." required>
