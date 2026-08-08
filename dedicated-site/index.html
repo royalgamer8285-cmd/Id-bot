@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FunStat — Telegram OSINT Analytics | Know Everything About Any User</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+body{background:#0a0f1c;color:#e2e8f0;line-height:1.6;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.btn{padding:12px 24px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;display:inline-block;border:none}
+.btn-primary{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;box-shadow:0 8px 20px rgba(99,102,241,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(99,102,241,.4)}
+.btn-outline{border:1px solid #334155;color:#94a3b8;background:#1e293b}
+.btn-outline:hover{border-color:#0ea5e9;color:#fff}
+.container{max-width:1100px;margin:0 auto;padding:0 20px}
+.nav{position:sticky;top:0;z-index:50;background:rgba(10,15,28,.8);backdrop-filter:blur(16px);border-bottom:1px solid #1e293b;padding:14px 0}
+.nav-inner{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.nav-links{display:flex;gap:22px;font-size:13px;color:#94a3b8;align-items:center}
+.nav-links a:hover{color:#fff}
+@media(max-width:700px){.nav-links{font-size:12px;gap:12px}.hide-m{ display:none}}
+.hero{padding:60px 0 40px;display:grid;grid-template-columns:1.15fr .85fr;gap:36px;align-items:center}
+@media(max-width:900px){.hero{grid-template-columns:1fr}}
+.badge{display:inline-flex;align-items:center;gap:8px;background:#1e293b;border:1px solid #334155;padding:6px 12px;border-radius:20px;font-size:12px;color:#38bdf8;margin-bottom:16px}
+.hero h1{font-size:42px;line-height:1.1;font-weight:900;letter-spacing:-1px;margin-bottom:14px}
+.hero h1 span{background:linear-gradient(135deg,#38bdf8,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{color:#94a3b8;font-size:15px;margin-bottom:22px;max-width:520px}
+.hero-stats{display:flex;gap:18px;margin:22px 0;flex-wrap:wrap}
+.hero-stat{background:#111827;border:1px solid #1e293b;padding:14px 16px;border-radius:14px;min-width:120px}
+.hero-stat b{font-size:20px;color:#38bdf8;display:block}
+.hero-stat span{font-size:11px;color:#64748b;letter-spacing:.5px;text-transform:uppercase}
+.phone{width:340px;max-width:100%;background:#0f172a;border:3px solid #1e293b;border-radius:28px;padding:18px;box-shadow:0 30px 60px rgba(0,0,0,.5);margin:0 auto}
+.phone-top{width:90px;height:14px;background:#1e293b;border-radius:10px;margin:0 auto 14px}
+.bubble{background:#1e293b;padding:12px 14px;border-radius:16px;margin-bottom:12px;font-size:13px;line-height:1.5;border-left:3px solid #0ea5e9}
+.bubble2{border-left-color:#22c55e}
+.bubble3{border-left-color:#f59e0b}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:800px){.grid3{grid-template-columns:1fr}}
+.card{background:#111827;border:1px solid #1e293b;border-radius:16px;padding:20px}
+.card-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px}
+.card h3{font-size:15px;margin-bottom:6px}
+.card p{font-size:13px;color:#94a3b8;line-height:1.6}
+.section{padding:50px 0}
+.section h2{font-size:26px;font-weight:800;text-align:center;margin-bottom:8px}
+.section-sub{color:#64748b;font-size:13px;text-align:center;margin-bottom:28px}
+.pricing{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+@media(max-width:900px){.pricing{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.pricing{grid-template-columns:1fr}}
+.price-card{background:#111827;border:1px solid #1e293b;border-radius:16px;padding:18px;text-align:center;position:relative}
+.price-card.popular{border-color:#6366f1;transform:scale(1.03);box-shadow:0 10px 30px rgba(99,102,241,.25)}
+.price-card.popular::before{content:"Popular";position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;font-size:10px;padding:3px 10px;border-radius:20px;font-weight:800;letter-spacing:.5px}
+.price-card h4{font-size:13px;color:#94a3b8;margin-bottom:6px}
+.price-card b{font-size:22px;color:#fff;display:block}
+.price-card span{font-size:11px;color:#64748b}
+.price-card .btn{margin-top:12px;width:100%;padding:10px;font-size:13px}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:700px){.how{grid-template-columns:1fr}}
+.step{background:#0f172a;border:1px dashed #334155;border-radius:16px;padding:18px;text-align:center}
+.step-num{width:36px;height:36px;background:#1e293b;color:#38bdf8;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-weight:800}
+.faq{background:#111827;border:1px solid #1e293b;border-radius:14px;padding:16px;margin-bottom:10px}
+.faq b{font-size:14px;display:block;margin-bottom:6px}
+.faq p{font-size:13px;color:#94a3b8}
+.footer{border-top:1px solid #1e293b;padding:30px 0;margin-top:40px;color:#64748b;font-size:12px;text-align:center}
+.demo{width:100%;padding:12px;border-radius:12px;border:1px solid #334155;background:#0f172a;color:#fff;font-size:14px;margin-bottom:10px}
+.demo:focus{outline:none;border-color:#0ea5e9}
+.kbd{font-size:11px;background:#1e293b;border:1px solid #334155;padding:2px 6px;border-radius:6px;color:#94a3b8}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="container nav-inner">
+    <div class="logo"><div class="logo-icon">📊</div> FunStat <span style="color:#64748b;font-weight:600">OSINT</span> <span class="kbd hide-m">EN</span></div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#api">API</a>
+      <a href="https://t.me/fun4infobot" class="btn btn-primary" style="padding:8px 16px;font-size:12px">Open Bot →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="container hero">
+  <div>
+    <div class="badge">● Live — Monitoring 500K+ links/day <span style="color:#64748b">• Only public data</span></div>
+    <h1>Know everything<br>about any <span>Telegram user</span></h1>
+    <p>FunStat is the most powerful OSINT bot for Telegram. Discover interests, messages, account history, public activity and more — just from @username or ID.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+      <a href="https://t.me/fun4infobot" class="btn btn-primary">🚀 Start Bot on Telegram</a>
+      <a href="#demo" class="btn btn-outline">Try Live Demo</a>
+    </div>
+    <p style="font-size:11px;color:#64748b">🎁 New users get <b style="color:#38bdf8">2 Credits FREE</b> • Owner: 7929802589 • UPI: raman18k@fam</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><b>1.2M+</b><span>Chats Indexed</span></div>
+      <div class="hero-stat"><b>24/7</b><span>Real-time</span></div>
+      <div class="hero-stat"><b>₹20</b><span>Per Credit</span></div>
+      <div class="hero-stat"><b>UPI + USDT</b><span>Payment</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="phone-top"></div>
+      <div style="text-align:center;margin-bottom:10px;font-weight:700;font-size:13px">FunStat Bot <span style="color:#64748b">@fun4infobot • online</span></div>
+      <div class="bubble">
+        <b>🔍 FunStat — Know everything</b><br>
+        <span style="color:#94a3b8">Find chats, messages, history, interests, activity. Only public data, 24/7 real-time.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0">
+        <div style="background:#0ea5e9;color:#fff;padding:10px;border-radius:12px;text-align:center;font-size:11px;font-weight:700">🔍 Search User</div>
+        <div style="background:#1e293b;border:1px solid #334155;padding:10px;border-radius:12px;text-align:center;font-size:11px">🌐 Search Chats</div>
+        <div style="background:#22c55e;color:#0f172a;padding:10px;border-radius:12px;text-align:center;font-size:11px;font-weight:700">💎 Balance</div>
+        <div style="background:#1e293b;border:1px solid #334155;padding:10px;border-radius:12px;text-align:center;font-size:11px">👁 Surveillance</div>
+      </div>
+      <div class="bubble bubble2">
+        <b>📱 UPI Payment</b><br>
+        <span style="color:#94a3b8">10 Credits — ₹200<br>UPI: raman18k@fam<br>Scan QR → Send screenshot → Owner approves ✓</span>
+      </div>
+      <div class="bubble bubble3" style="font-size:11px;color:#94a3b8;text-align:center">
+        Try in Telegram: <b style="color:#fff">/search @durov</b> or <b style="color:#fff">/menu</b>
+      </div>
+    </div>
+    <p style="text-align:center;color:#475569;font-size:11px;margin-top:10px">↑ Live bot preview — exactly as in Telegram</p>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="container">
+    <h2>Everything the original FunStat does — and more</h2>
+    <p class="section-sub">All original features replicated 1:1, 100% English, owner-controlled billing.</p>
+    <div class="grid3">
+      <div class="card"><div class="card-icon" style="background:#0ea5e920;color:#0ea5e9">👥</div><h3>Chats User Is In</h3><p>List of public groups & channels where user leaves messages. Up to 20 chats per report.</p></div>
+      <div class="card"><div class="card-icon" style="background:#22c55e20;color:#22c55e">💬</div><h3>Public Message Export</h3><p>Collect & save public messages from open sources. Count + samples, no private chats.</p></div>
+      <div class="card"><div class="card-icon" style="background:#a855f720;color:#a855f7">🔄</div><h3>Account History</h3><p>Name, username, photo changes over time. See how profile evolved.</p></div>
+      <div class="card"><div class="card-icon" style="background:#f59e0b20;color:#f59e0b">📈</div><h3>Activity & Interests</h3><p>Activity level (High/Med/Low), active hours, interests auto-detected: Crypto, Jobs, Gaming, Dating, Tech.</p></div>
+      <div class="card"><div class="card-icon" style="background:#ef444420;color:#ef4444">❤️</div><h3>Reactions & Words</h3><p>Favorite reactions (%) and most frequent words with bar graph. Word cloud style.</p></div>
+      <div class="card"><div class="card-icon" style="background:#6366f120;color:#6366f1">👁</div><h3>Surveillance 28 Days</h3><p>Track user for 28 days — 1 Credit. Get notified on new messages & profile changes.</p></div>
+      <div class="card"><div class="card-icon" style="background:#06b6d420;color:#06b6d4">🌐</div><h3>Chat Search by Keyword</h3><p>Find chats/channels by keyword. Bot indexes ~500k links/day, 5-10% are valid chats.</p></div>
+      <div class="card"><div class="card-icon" style="background:#ec489920;color:#ec4899">🕸</div><h3>Social Graph</h3><p>Who user interacts with most. Common chats analysis.</p></div>
+      <div class="card"><div class="card-icon" style="background:#84cc1620;color:#84cc16">🌍</div><h3>Languages & Reputation</h3><p>Language preferences, Verified / Scam / Fake tags detection.</p></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+      <div class="card" style="border:1px dashed #334155"><h3>🔗 Referral 35%</h3><p>Invite friends via <span class="kbd">t.me/fun4infobot?start=YOUR_ID</span><br>• +1 Credit per referral • 35% at 300 refs (25% at 50, 30% at 150) — auto-credited.</p></div>
+      <div class="card" style="border:1px dashed #334155"><h3>🔗 API Access</h3><p>Client status via purchase. 1 request = 1 Credit. <span class="kbd">POST /v1/search {username, api_key}</span> — perfect for HR, admins, marketers.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" style="background:#0f172a;border-top:1px solid #1e293b;border-bottom:1px solid #1e293b">
+  <div class="container">
+    <h2>How it works</h2>
+    <p class="section-sub">3 steps — exactly like original FunStat</p>
+    <div class="how">
+      <div class="step"><div class="step-num">1</div><b>Start Bot</b><p style="font-size:13px;color:#94a3b8">Open <span class="kbd">@fun4infobot</span> → /start → get 2 FREE Credits</p></div>
+      <div class="step"><div class="step-num">2</div><b>Search</b><p style="font-size:13px;color:#94a3b8">Tap 🔍 Search or type <span class="kbd">/search @username</span> — costs 1 Credit = ₹20</p></div>
+      <div class="step"><div class="step-num">3</div><b>Get Report</b><p style="font-size:13px;color:#94a3b8">Full OSINT report in 5-10 sec — chats, history, interests, words, scam check</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="section" id="demo">
+  <div class="container">
+    <h2>Try Live Demo</h2>
+    <p class="section-sub">Mock search — real bot does it live in Telegram</p>
+    <div style="max-width:640px;margin:0 auto;background:#111827;border:1px solid #1e293b;border-radius:16px;padding:20px">
+      <input id="demoInput" class="demo" placeholder="Enter @username or ID, e.g. @durov">
+      <button class="btn btn-primary" style="width:100%" onclick="runDemo()">🔍 Search (Demo • 1 Credit)</button>
+      <div id="demoOut" style="margin-top:16px;display:none;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:16px;font-size:13px;line-height:1.7;white-space:pre-wrap"></div>
+      <p style="font-size:11px;color:#475569;margin-top:10px;text-align:center">Demo is static preview. For real data, use Telegram bot with your API.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+  <div class="container">
+    <h2>Simple pricing — Owner controls everything</h2>
+    <p class="section-sub">Owner can change price anytime via bot /owner or website panel. Current: ₹20 / Credit</p>
+    <div class="pricing">
+      <div class="price-card"><h4>5 Credits</h4><b>₹100</b><span>₹20 each</span><a href="https://t.me/fun4infobot" class="btn btn-outline">Buy</a></div>
+      <div class="price-card"><h4>10 Credits</h4><b>₹200</b><span>₹20 each</span><a href="https://t.me/fun4infobot" class="btn btn-outline">Buy</a></div>
+      <div class="price-card popular"><h4>25 Credits</h4><b>₹500</b><span>₹20 each</span><a href="https://t.me/fun4infobot" class="btn btn-primary">Buy</a></div>
+      <div class="price-card"><h4>50 Credits</h4><b>₹1,000</b><span>₹20 each</span><a href="https://t.me/fun4infobot" class="btn btn-outline">Buy</a></div>
+      <div class="price-card"><h4>100 Credits</h4><b>₹2,000</b><span>₹20 each</span><a href="https://t.me/fun4infobot" class="btn btn-outline">Buy</a></div>
+    </div>
+    <p style="text-align:center;margin-top:14px;color:#94a3b8;font-size:13px">Pay via <b style="color:#22c55e">UPI — raman18k@fam</b> (QR auto) or <b style="color:#f59e0b">USDT TRC20 / BEP20</b> — Owner approves in 5-10 min • <span class="kbd">Owner Panel → Set Price / Set UPI / Set USDT</span></p>
+  </div>
+</section>
+
+<!-- API -->
+<section class="section" id="api" style="background:#0f172a;border-top:1px solid #1e293b">
+  <div class="container">
+    <h2>API for clients</h2>
+    <p class="section-sub">Requires client status (any purchase or referral). Like original FunStat.</p>
+    <div style="max-width:760px;margin:0 auto;background:#111827;border:1px solid #1e293b;border-radius:16px;padding:20px;overflow:auto">
+      <div style="display:flex;gap:8px;margin-bottom:12px"><span class="kbd">POST</span> <span style="color:#38bdf8;font-weight:700">/v1/search</span> <span style="color:#64748b;font-size:12px">— 1 Credit per request</span></div>
+<pre style="color:#94a3b8;font-size:12px;line-height:1.7;background:#0a0f1c;padding:16px;border-radius:12px;overflow:auto">{
+  "username": "@durov",
+  "api_key": "FS-7929802589-KEY"
+}
+
+Response: {
+  "user_id": 123456,
+  "username": "@durov",
+  "chats": ["Crypto India", "Gaya Jobs"],
+  "messages_count": 342,
+  "interests": ["Crypto", "Tech"],
+  "activity": "High"
+}</pre>
+      <p style="font-size:12px;color:#64748b;margin-top:10px">Docs available in bot: send <span class="kbd">/api</span> — Owner sets API keys.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section">
+  <div class="container" style="max-width:800px">
+    <h2>FAQ</h2>
+    <div class="faq"><b>Does FunStat show private messages?</b><p>No. Only public data from open groups/channels. Private chats are never accessed — 100% Telegram ToS safe.</p></div>
+    <div class="faq"><b>Can I hide my profile from analysis?</b><p>Yes — leave public groups or restrict visibility. Bot respects public data only; owner can enable stealth modes.</p></div>
+    <div class="faq"><b>How does surveillance work?</b><p>1 Credit = 28 days tracking. You get notifications when tracked user changes name/photo/username or posts new public messages.</p></div>
+    <div class="faq"><b>Is it legal in India?</b><p>Yes — uses only public Telegram data, same as original FunStat. No leaks, no private data stored (no phones, addresses, IPs).</p></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section style="padding:40px 0;background:linear-gradient(135deg,#0ea5e9,#6366f1);text-align:center;color:#fff">
+  <div class="container">
+    <h2 style="color:#fff">Ready to start?</h2>
+    <p style="opacity:.9;margin:8px 0 18px">Get 2 Credits FREE — Start searching in 10 seconds</p>
+    <a href="https://t.me/fun4infobot" class="btn" style="background:#fff;color:#0f172a;font-weight:800;padding:14px 28px;font-size:15px">🚀 Open @fun4infobot in Telegram</a>
+    <p style="font-size:12px;opacity:.8;margin-top:10px">Owner Panel: /owner in bot or Website (Port 5000) • Support: @johndon69</p>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    FunStat Clone — Dedicated OSINT Website • Built for @fun4infobot • Owner ID 7929802589 • UPI raman18k@fam<br>
+    <span style="color:#334155">Not affiliated with Telegram. For entertainment & research. Only public data. Made for love ❤️</span>
+  </div>
+</footer>
+
+<script>
+function runDemo(){
+  const v = document.getElementById('demoInput').value.trim() || '@durov';
+  const out = document.getElementById('demoOut');
+  out.style.display='block';
+  out.textContent = `📊 FUNSTAT FULL REPORT
+
+👤 Target: ${v}
+🆔 User ID: 123456789
+📛 Name: Demo User
+🔗 Username: ${v}
+📜 Username History: ${v} → @old_demo_2022 → @old_demo_2023
+🖼 Profile Photos: 3
+📅 Account Age: 3+ years old
+📝 Bio: Crypto enthusiast | DM for collab
+
+📈 Activity Level: Medium (342 public msgs)
+⏰ Active Hours: Evening 19-23 IST peak
+🌐 Languages: English (primary), Hindi
+🎯 Interests: 💰 Crypto / Trading, 💼 Jobs / HR
+❤️ Top Reactions: 👍 38% | ❤️ 22% | 🔥 15%
+📝 Top Words: crypto(47), bro(34), free(29), profit(24)
+
+👥 Public Groups (6 found):
+  • Crypto Traders India
+  • Gaya Bihar Jobs
+  • Telegram Tips Daily
+  • FunStat Talk
+  • Binance P2P India
+  • Job Alerts Bihar
+
+🔍 Social Graph: Interacts most in first 2 groups
+📂 Message Export: 342 msgs indexed (public only)
+
+💎 1 Credit deducted — Try real in Telegram: t.me/fun4infobot`;
+}
+</script>
+</body>
+</html>
