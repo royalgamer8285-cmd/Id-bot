@@ -6,3 +6,4 @@ Flask
 qrcode
 pillow
 aiohttp
+openpyxl
