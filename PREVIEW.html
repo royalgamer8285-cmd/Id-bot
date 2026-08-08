@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FunStat Clone - Owner Panel Preview</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family: 'Segoe UI', sans-serif;}
+body{background:#0a0e1a;color:#e2e8f0;padding:20px}
+.header{background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:30px;border-radius:20px;text-align:center;margin-bottom:20px}
+.header h1{font-size:28px;margin-bottom:8px}
+.header p{opacity:0.9;font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat{background:#1e293b;border:1px solid #334155;border-radius:14px;padding:18px;text-align:center}
+.stat b{font-size:22px;color:#38bdf8;display:block}
+.stat span{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px}
+.grid{display:grid;grid-template-columns:1fr 380px;gap:16px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:20px;margin-bottom:16px}
+.card h3{color:#38bdf8;margin-bottom:14px;font-size:16px}
+.phone{width:360px;background:#0f172a;border:3px solid #334155;border-radius:28px;padding:16px;position:sticky;top:20px}
+.phone-top{height:18px;background:#334155;border-radius:10px;width:100px;margin:0 auto 14px}
+.bubble{background:#1e293b;padding:12px 14px;border-radius:14px;margin-bottom:10px;font-size:13px;line-height:1.5;border-left:3px solid #38bdf8}
+.bubble-owner{border-left-color:#22c55e;background:#14532d20}
+.btn{display:inline-block;background:#38bdf8;color:#0f172a;padding:7px 13px;border-radius:20px;font-size:12px;font-weight:700;margin:4px 3px}
+.btn-outline{border:1px solid #38bdf8;color:#38bdf8;background:transparent}
+.input{width:100%;padding:11px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#fff;margin:6px 0 12px;font-size:13px}
+.label{font-size:11px;color:#94a3b8;letter-spacing:0.5px}
+.save{width:100%;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:6px}
+.qr{width:130px;height:130px;background:#fff;border-radius:12px;margin:12px auto;display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:800;font-size:11px}
+.flow{display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 0}
+.flow div{background:#334155;padding:10px 14px;border-radius:10px;font-size:12px;text-align:center;flex:1}
+.arrow{color:#38bdf8;font-weight:bold}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.phone{width:100%;position:relative}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>✅ FunStat Full Clone Ready hai!</h1>
+  <p>Owner Control: Price / UPI / USDT aap jab chahe change kar sakte ho - Bot + Web dono se</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><b>₹20</b><span>Price / Credit</span></div>
+  <div class="stat"><b>1,248</b><span>Total Users</span></div>
+  <div class="stat"><b>5,420 💎</b><span>Credits Sold</span></div>
+  <div class="stat"><b>3</b><span>Pending</span></div>
+</div>
+
+<div class="grid">
+  <div>
+    <div class="card">
+      <h3>👑 Owner Control Panel - Web + Bot</h3>
+      <p style="color:#94a3b8;font-size:13px;margin-bottom:14px">Aapne bola tha: 1 credit ka INR price + UPI/USDT owner id se manage ho - Ye raha solution. 2 jagah se control hai:</p>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="background:#0f172a;padding:14px;border-radius:12px;border:1px solid #334155">
+          <b style="color:#22c55e">🤖 Bot me /owner</b>
+          <p style="font-size:12px;color:#94a3b8;margin-top:6px">Telegram pe /owner likho → buttons se price, UPI, USDT set karo. Instant update!</p>
+          <div style="margin-top:8px"><span class="btn">💰 Set Price</span> <span class="btn btn-outline">🏦 Set UPI</span></div>
+        </div>
+        <div style="background:#0f172a;padding:14px;border-radius:12px;border:1px solid #334155">
+          <b style="color:#38bdf8">🌐 Web Dashboard</b>
+          <p style="font-size:12px;color:#94a3b8;margin-top:6px">Browser me kholo (localhost:5000) → form bharo → Save → Bot auto update.</p>
+          <div style="margin-top:8px"><span class="btn" style="background:#6366f1;color:#fff">💾 Save Web</span></div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:20px">💳 Current Settings (Live)</h3>
+      <label class="label">💎 PRICE PER CREDIT (INR)</label>
+      <div class="input">20 <span style="float:right;color:#22c55e">✓ Editable by Owner</span></div>
+      
+      <label class="label">🏦 UPI ID</label>
+      <div class="input">gaya-business@upi <span style="float:right;color:#22c55e">✓</span></div>
+      
+      <label class="label">💵 USDT TRC20 (Tron)</label>
+      <div class="input" style="font-size:11px">TX8y...9fK2 - Tron Network</div>
+      
+      <label class="label">💵 USDT BEP20 (BSC)</label>
+      <div class="input" style="font-size:11px">0x71C...4a9f - BSC Network</div>
+      
+      <button class="save">✅ Bot already using these - Change anytime!</button>
+      <p style="font-size:11px;color:#64748b;margin-top:8px;text-align:center">Aap bot me /owner → Set Price / Set UPI / Set USDT dabake bhi change kar sakte ho</p>
+    </div>
+
+    <div class="card">
+      <h3>🔍 Sare Funstat Features Added</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+        <div style="background:#0f172a;padding:12px;border-radius:10px">✅ User Check<br><span style="color:#94a3b8;font-size:11px">@username → Groups, History, Activity</span></div>
+        <div style="background:#0f172a;padding:12px;border-radius:10px">✅ Chat Search<br><span style="color:#94a3b8;font-size:11px">Keyword → Public channels</span></div>
+        <div style="background:#0f172a;padding:12px;border-radius:10px">✅ Word Analysis<br><span style="color:#94a3b8;font-size:11px">Most used words + graph</span></div>
+        <div style="background:#0f172a;padding:12px;border-radius:10px">✅ Surveillance<br><span style="color:#94a3b8;font-size:11px">28 din tracking 1 credit</span></div>
+        <div style="background:#0f172a;padding:12px;border-radius:10px">✅ UPI QR Auto<br><span style="color:#94a3b8;font-size:11px">Amount ke hisaab se QR</span></div>
+        <div style="background:#0f172a;padding:12px;border-radius:10px">✅ USDT Both Network<br><span style="color:#94a3b8;font-size:11px">TRC20 + BEP20</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="border:1px dashed #38bdf8">
+      <h3>💳 User Payment Flow (Auto)</h3>
+      <div class="flow">
+        <div>👤<br>User<br><b>Buy 10 Cr</b></div><span class="arrow">→</span>
+        <div>📱<br>UPI QR<br><b>₹200</b></div><span class="arrow">→</span>
+        <div>📸<br>Screenshot<br><b>Pending</b></div><span class="arrow">→</span>
+        <div>👑<br>Owner<br><b>Approve ✅</b></div><span class="arrow">→</span>
+        <div>💎<br>Credits<br><b>Added</b></div>
+      </div>
+      <p style="font-size:12px;color:#94a3b8;text-align:center">Owner ko Telegram pe notification + Web pe list - 1 click me Approve/Reject</p>
+    </div>
+  </div>
+
+  <div class="phone">
+    <div class="phone-top"></div>
+    <div style="text-align:center;margin-bottom:12px">
+      <b>FunStat Clone Bot</b><br><span style="font-size:11px;color:#94a3b8">@YourBot • Online</span>
+    </div>
+    
+    <div class="bubble">
+      👋 <b>Welcome to FunStat Clone!</b><br>
+      🔍 User kis groups me hai<br>
+      💬 Messages history<br>
+      🔄 Name/Photo history<br><br>
+      💎 Price: <b>20 INR = 1 Credit</b><br>
+      🎁 2 Free Credits!
+    </div>
+    
+    <div style="margin:10px 0">
+      <span class="btn">🔍 User Check (1 💎)</span><span class="btn">🌐 Chat Search</span><br>
+      <span class="btn btn-outline">💎 Buy Credits</span><span class="btn btn-outline">👤 My Profile (2 💎)</span><br>
+      <span class="btn" style="background:#22c55e;color:#fff;width:100%;text-align:center">👑 OWNER PANEL</span>
+    </div>
+
+    <div class="bubble-owner">
+      👑 <b>OWNER PANEL</b><br>
+      💰 Price/Credit: ₹20<br>
+      🏦 UPI: gaya-business@upi<br>
+      💵 USDT: TX8y...9fK2<br><br>
+      <span class="btn" style="font-size:10px;padding:5px 10px">💰 Set Price</span>
+      <span class="btn" style="font-size:10px;padding:5px 10px;background:#6366f1;color:#fff">🏦 Set UPI</span>
+    </div>
+
+    <div class="bubble">
+      📱 <b>UPI Payment</b>
+      <div class="qr">UPI QR<br>₹200<br>gaya-business@upi</div>
+      <center><span class="btn" style="background:#22c55e;color:#fff">✅ I Paid - Send Screenshot</span></center>
+    </div>
+
+    <div class="bubble" style="font-size:11px;color:#94a3b8">
+      🔔 <b>Owner ko notification:</b><br>
+      👤 User: Rahul (@rahul) ID: 12345<br>
+      💎 10 Credits - ₹200 via UPI<br>
+      <span class="btn" style="background:#22c55e;color:#fff;padding:5px 10px;font-size:11px">✅ Approve</span> <span class="btn" style="background:#ef4444;color:#fff;padding:5px 10px">❌ Reject</span>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;background:linear-gradient(135deg,#1e293b,#0f172a);border-color:#6366f1">
+  <h3 style="color:#fff">📋 Next Step - Credentials Bhejo</h3>
+  <p style="font-size:13px;color:#cbd5e1;line-height:1.6">
+    Bot 100% ready hai, bas aapke credentials lagane hai. Niche wali 4 cheezein bhejo, mai turant live kar dunga:<br><br>
+    <b style="color:#38bdf8">1. BOT_TOKEN</b> - @BotFather se (/newbot)<br>
+    <b style="color:#38bdf8">2. API_ID + API_HASH</b> - my.telegram.org se<br>
+    <b style="color:#38bdf8">3. OWNER_ID</b> - @userinfobot se apni ID<br>
+    <b style="color:#38bdf8">4. UPI + USDT addresses</b> - jo abhi lagane hai (baad me bot se change ho jayega)<br><br>
+    <i>Example format me bhejo, mai .env me laga ke bot start karke test karke dunga.</i>
+  </p>
+</div>
+
+</body>
+</html>

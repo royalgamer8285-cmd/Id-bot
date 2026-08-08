@@ -1,0 +1,33 @@
+services:
+  # 🤖 Telegram Bot - Web Service (with Keep-Alive) - Never sleeps with health check
+  - type: web
+    name: funstat-bot
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    healthCheckPath: /health
+    autoDeploy: false
+
+  # 🌐 Dedicated Website - Static Site
+  - type: web
+    name: funstat-website
+    env: static
+    region: singapore
+    plan: free
+    staticPublishPath: ./dedicated-site
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # 👑 Owner Panel - Web Service
+  - type: web
+    name: funstat-owner-panel
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install Flask aiosqlite python-dotenv
+    startCommand: python admin_web/app.py
+    healthCheckPath: /
