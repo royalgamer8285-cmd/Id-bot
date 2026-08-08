@@ -1,0 +1,2 @@
+# Keep .env for Render deploy
+!.env
