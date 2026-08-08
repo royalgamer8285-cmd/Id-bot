@@ -36,9 +36,22 @@ def update_settings():
     for k,v in [('price_per_credit',price), ('upi_id',upi), ('usdt_trc20',trc), ('usdt_bep20',bep)]:
         if v is not None:
             conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES(?,?)", (k,v))
+    # Handle UPI QR upload via web
+    if 'upi_qr' in request.files:
+        f = request.files['upi_qr']
+        if f and f.filename:
+            import pathlib
+            save_path = pathlib.Path(__file__).parent.parent / "upi_qr_custom.jpg"
+            f.save(str(save_path))
+            # Also set flag so bot knows custom QR exists (store as local path marker)
+            conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES(?,?)", ("upi_qr_file_id", "local:upi_qr_custom.jpg"))
+            flash("✅ Custom UPI QR uploaded via Web! Bot will now show this QR.")
+        else:
+            flash("✅ Settings Updated! Bot me instantly reflect hoga (QR not changed)")
+    else:
+        flash("✅ Settings Updated! Bot me instantly reflect hoga")
     conn.commit()
     conn.close()
-    flash("✅ Settings Updated! Bot me instantly reflect hoga")
     return redirect(url_for('index'))
 
 @app.route('/users')
