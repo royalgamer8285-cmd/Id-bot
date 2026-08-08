@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FunStat Owner Panel</title>
+<style>
+body{font-family: Inter, sans-serif;background:#0f172a;color:#fff;margin:0;padding:20px}
+.card{background:#1e293b;border-radius:16px;padding:20px;margin-bottom:20px;border:1px solid #334155}
+.stat{display:inline-block;background:#334155;padding:15px 25px;border-radius:12px;margin:8px;text-align:center}
+.stat b{font-size:28px;color:#38bdf8;display:block}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#fff;margin:6px 0 14px}
+button{background:#38bdf8;color:#0f172a;border:none;padding:12px 24px;border-radius:10px;font-weight:700;cursor:pointer;width:100%}
+label{color:#94a3b8;font-size:13px}
+h1{color:#38bdf8}
+a{color:#38bdf8;text-decoration:none;margin-right:12px}
+.flash{background:#22c55e;color:#fff;padding:12px;border-radius:10px;margin-bottom:16px}
+</style>
+</head>
+<body>
+<h1>👑 FunStat - Owner Control Panel</h1>
+<p>Yaha se aap credit price, UPI & USDT sab manage kar sakte ho - bot me instantly update hoga!</p>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}<div class="flash">{{messages[0]}}</div>{% endif %}
+{% endwith %}
+
+<div>
+  <div class="stat"><b>{{users}}</b>Total Users</div>
+  <div class="stat"><b>{{credits}}</b>Total Credits</div>
+  <div class="stat"><b>{{pending}}</b>Pending Payments</div>
+  <div class="stat"><b>₹{{settings.get('price_per_credit','20')}}</b>Per Credit</div>
+</div>
+
+<div class="card">
+  <h3>💰 Payment & Price Settings</h3>
+  <form method="POST" action="/settings">
+    <label>💎 Price Per Credit (INR)</label>
+    <input name="price_per_credit" value="{{settings.get('price_per_credit','20')}}" required>
+    
+    <label>🏦 UPI ID (jaise: yourname@upi)</label>
+    <input name="upi_id" value="{{settings.get('upi_id','')}}" placeholder="yourname@upi" required>
+    
+    <label>💵 USDT TRC20 Address (Tron Network)</label>
+    <input name="usdt_trc20" value="{{settings.get('usdt_trc20','')}}" placeholder="TX..." required>
+    
+    <label>💵 USDT BEP20 Address (BSC Network)</label>
+    <input name="usdt_bep20" value="{{settings.get('usdt_bep20','')}}" placeholder="0x...">
+    
+    <button type="submit">💾 Save & Update Bot</button>
+  </form>
+  <p style="color:#94a3b8;font-size:13px;margin-top:10px">✅ Save karte hi bot automatically naya price/UPI/USDT use karne lagega. Bot restart ki zaroorat nahi!</p>
+</div>
+
+<div class="card">
+  <h3>🔗 Quick Links</h3>
+  <a href="/users">👥 View All Users</a>
+  <a href="/transactions">💳 Transactions</a>
+  <a href="#" onclick="alert('Bot me /owner command use karo')">🤖 Open Bot Owner Panel</a>
+</div>
+
+<div class="card" style="background:#1e293b;border:1px dashed #38bdf8">
+  <h3>📱 Bot Features Included</h3>
+  <ul style="color:#cbd5e1;line-height:1.8">
+    <li>🔍 User Check - Groups, Messages, History, Interests</li>
+    <li>🌐 Chat Search by Keyword</li>
+    <li>📝 Word Frequency Analysis</li>
+    <li>👁 Surveillance 28 Days</li>
+    <li>💎 Auto UPI QR + USDT Payment Flow</li>
+    <li>👑 Owner Approve/Reject + Manual Credit Add</li>
+  </ul>
+</div>
+</body>
+</html>
