@@ -2,7 +2,12 @@ import aiosqlite
 import os
 from datetime import datetime, timedelta
 
-DB_PATH = os.getenv("DATABASE_PATH", "database/funstat.db")
+_raw = os.getenv("DATABASE_PATH", "database/funstat.db")
+# Render persistence: if /data disk not mounted (local dev), fallback to local database
+if _raw.startswith("/data") and not os.path.exists("/data"):
+    DB_PATH = "database/funstat.db"
+else:
+    DB_PATH = _raw
 
 CREATE_TABLES = """
 CREATE TABLE IF NOT EXISTS users (
