@@ -5,6 +5,14 @@ import os
 app = Flask(__name__)
 app.secret_key = os.getenv("WEB_ADMIN_SECRET", "funstat-secret-2024")
 DB_PATH = os.getenv("DATABASE_PATH", "../database/funstat.db")
+# Fallback for local dev when /data disk not mounted (Render persistence)
+if DB_PATH.startswith("/data") and not os.path.exists("/data"):
+    DB_PATH = "../database/funstat.db"
+    # Also try alternative relative path
+    if not os.path.exists(DB_PATH):
+        DB_PATH = "database/funstat.db"
+        if not os.path.exists(DB_PATH):
+            DB_PATH = "../database/funstat.db"
 OWNER_ID = os.getenv("OWNER_ID", "")
 
 def get_db():
