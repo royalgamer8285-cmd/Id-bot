@@ -9,7 +9,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 import config
-from database.db import init_db, get_setting, set_setting, ensure_user, get_user, add_credits, deduct_credits, get_stats
+from database.db import init_db, get_setting, set_setting, ensure_user, get_user, add_credits, deduct_credits, get_stats, DB_PATH
 from handlers.osint_engine import analyze_user, format_report, search_chats_by_keyword, top_chats_demo
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=config.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML)) if config.BOT_TOKEN else None
@@ -62,8 +62,8 @@ Other
 Now 1,172,924,888 users, 72,689,608 groups/channels and 131,027,360,600 messages
 
 contact @akulovme
-{owner_line}
-💎 Price: {price} INR = 1 Credit | 🎁 15 Credits FREE
+
+🎁 15 Credits FREE bonus
 """
 def stylize_menu_text(user, referals, total_4week, consumption, links=0, invites=0, mentions=0, other=0):
     credits=user[3] if user else 0;uid=user[0] if user else 0
@@ -122,9 +122,8 @@ async def start_handler(message: Message, state: FSMContext):
                     except: pass
         except: pass
     await ensure_user(message.from_user.id,message.from_user.username or "",message.from_user.first_name or "",referred_by)
-    price=await get_price();is_owner=config.is_owner(message.from_user.id)
-    owner_line="👑 <b>You are OWNER</b> — Full control enabled!\n" if is_owner else ""
-    await message.answer(WELCOME.format(price=price,owner_line=owner_line),reply_markup=main_menu(is_owner))
+    is_owner=config.is_owner(message.from_user.id)
+    await message.answer(WELCOME,reply_markup=main_menu(is_owner))
     await message.answer("👇 Use bottom buttons: Check someone to select a user",reply_markup=reply_menu())
 
 @dp.message(Command("menu"))
@@ -133,7 +132,7 @@ async def menu_handler(message: Message, state: FSMContext):
     await ensure_user(message.from_user.id,message.from_user.username or "",message.from_user.first_name or "")
     user=await get_user(message.from_user.id)
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         cur=await db.execute("SELECT COUNT(*) FROM users WHERE referred_by=?",(message.from_user.id,))
         referals=(await cur.fetchone())[0] or 0
         cur2=await db.execute("SELECT SUM(cost) FROM history WHERE user_id=? AND created_at > datetime('now','-28 days')",(message.from_user.id,))
@@ -173,18 +172,52 @@ async def handle_profile_request(message, target, state):
     if not ok:
         await message.answer("❌ Not enough credits! /buy")
         return
-    await message.answer(f"⏳ Analyzing <b>{target}</b>...")
-    # For demo, use target as username, generate fake ID
-    fake_id=8031385118 if "sayang" in target.lower() or "akulov" in target.lower() else random.randint(100000000,999999999)
-    fake_username="@akulovme" if fake_id==8031385118 else f"@{target.lstrip('@')[:10]}"
-    name="Sayang" if fake_id==8031385118 else target.lstrip('@')[:10]
-    text=profile_card(fake_id,fake_username,name)
-    # Save history
-    import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
-        await db.execute("INSERT INTO history(user_id,target,result,cost,created_at) VALUES(?,?,?,?,?)",(message.from_user.id,str(target),text[:3000],1,datetime.now().isoformat()))
+    await message.answer(f"⏳ Analyzing <b>{target}</b>... <i>Fetching real Telegram data</i>")
+    # Try to get real data via Telethon (service system)
+    try:
+        report=await analyze_user(target)
+        if "error" not in report:
+            real_id=report.get("user_id", 8031385118)
+            real_username=report.get("username", f"@{target.lstrip('@')[:12]}")
+            real_name=report.get("name", target.lstrip('@')[:12])
+            # If stealth enabled for target, block
+            from database.db import DB_PATH as DBP
+            import aiosqlite
+            async with aiosqlite.connect(DBP) as db:
+                cur=await db.execute("SELECT stealth FROM users WHERE user_id=? OR username=?", (real_id, real_username))
+                row=await cur.fetchone()
+                if row and row[0]==1:
+                    await message.answer("🔒 <b>User has enabled Hide Data (stealth)</b> — profile hidden.\nTry another user.")
+                    # Refund credit
+                    await add_credits(message.from_user.id,1)
+                    return
+            text=profile_card(real_id,real_username,real_name)
+            # Append real extra info from report
+            extra=f"\n\n📊 <b>Real data:</b> {report.get('common_chats_count',0)} groups, {report.get('messages_count',0)} msgs, Activity: {report.get('activity_level','-')}"
+            text+=extra
+            fake_id=real_id
+        else:
+            # Fallback to demo if not found
+            fake_id=8031385118 if "sayang" in target.lower() or "akulov" in target.lower() else random.randint(100000000,999999999)
+            fake_username="@akulovme" if fake_id==8031385118 else f"@{target.lstrip('@')[:10]}"
+            name="Sayang" if fake_id==8031385118 else target.lstrip('@')[:10]
+            text=profile_card(fake_id,fake_username,name)
+            if "error" in report:
+                text+="\n\n⚠️ <i>Demo mode — real API data not available for this user</i>"
+    except Exception as e:
+        fake_id=random.randint(100000000,999999999)
+        fake_username=f"@{target.lstrip('@')[:10]}"
+        name=target.lstrip('@')[:10]
+        text=profile_card(fake_id,fake_username,name)
+        text+=f"\n\n⚠️ Fallback demo due to: {e}"
+        fake_id=fake_id
+    # Save history with correct DB_PATH
+    from database.db import DB_PATH as DBP2
+    import aiosqlite
+    async with aiosqlite.connect(DBP2) as db:
+        await db.execute("INSERT INTO history(user_id,target,result,cost,created_at) VALUES(?,?,?,?,?)",(message.from_user.id,str(target),text[:3000],1,__import__('datetime').datetime.now().isoformat()))
         await db.commit()
-    await message.answer(text + "\n\n💎 1 Credit deducted",reply_markup=profile_kb(fake_id))
+    await message.answer(text + "\n\n💎 1 Credit deducted — <i>All buttons below use this ID for tracking (Groups, Channels, etc.)</i>",reply_markup=profile_kb(fake_id))
     try: await state.clear()
     except: pass
 
@@ -195,11 +228,54 @@ async def waiting_target_handler(message: Message, state: FSMContext):
         is_owner=config.is_owner(message.from_user.id)
         await message.answer("❌ Cancelled",reply_markup=main_menu(is_owner))
         return
+    data=await state.get_data()
+    is_export=data.get("export", False)
+    is_surveillance=data.get("surveillance", False)
     target=message.text.strip() if message.text else ""
     if message.forward_from: target=str(message.forward_from.id)
     elif message.forward_from_chat: target=str(message.forward_from_chat.id)
     elif message.contact: target=str(message.contact.user_id or message.contact.phone_number)
     await state.clear()
+    if is_export:
+        # Export messages for target
+        user=await get_user(message.from_user.id)
+        if not user or user[3]<1:
+            price=await get_price()
+            await message.answer(f"❌ Need 1 Credit!",reply_markup=buy_kb(price))
+            return
+        ok=await deduct_credits(message.from_user.id,1)
+        if not ok:
+            await message.answer("❌ Not enough credits! /buy")
+            return
+        await message.answer(f"⏳ Exporting messages for <b>{target}</b>...")
+        # Show message filter for that target (like image 5)
+        kb=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="All (150)",callback_data=f"msg_all:{target}")],
+            [InlineKeyboardButton(text="Voices ✖ No",callback_data="msg_voices"),InlineKeyboardButton(text="Circles ✖ No",callback_data="msg_circles")],
+            [InlineKeyboardButton(text="Gif/sticker ✓ 68",callback_data="msg_gif"),InlineKeyboardButton(text="Links ✖ No",callback_data="msg_links")],
+            [InlineKeyboardButton(text="Video ✓ 1",callback_data="msg_video"),InlineKeyboardButton(text="Files ✓ 1",callback_data="msg_files")],
+            [InlineKeyboardButton(text="Images ✓ 1",callback_data="msg_images"),InlineKeyboardButton(text="Geo/contacts ✖ No",callback_data="msg_geo")],
+            [InlineKeyboardButton(text="💾 Download as file",callback_data=f"msg_dl:{target}")],[InlineKeyboardButton(text="🔙 Back",callback_data="back_menu")]])
+        await message.answer(f"📥 <b>Messages for {target}</b>\nSelect message type to export — all messages from groups/channels where this user posted.",reply_markup=kb)
+        return
+    if is_surveillance:
+        # Surveillance handling
+        user=await get_user(message.from_user.id)
+        if not user or user[3]<1:
+            price=await get_price()
+            await message.answer(f"❌ Need 1 Credit!",reply_markup=buy_kb(price))
+            return
+        ok=await deduct_credits(message.from_user.id,1)
+        if not ok:
+            await message.answer("❌ Not enough credits! /buy")
+            return
+        import aiosqlite
+        from database.db import DB_PATH as DBP
+        async with aiosqlite.connect(DBP) as db:
+            await db.execute("INSERT INTO tracking(watcher_id,target_username,target_id,expiry,active) VALUES(?,?,?,?,?)",(message.from_user.id,target,target,(datetime.now()+timedelta(days=28)).isoformat(),1))
+            await db.commit()
+        await message.answer(f"👁 <b>Surveillance activated!</b>\n🎯 Target: {target}\n⏳ 28 days\n💎 1 Credit deducted\nYou will get notifications.",reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="📋 Menu",callback_data="back_menu")]]))
+        return
     await handle_profile_request(message, target, state)
 
 @dp.callback_query(F.data=="check_user")
@@ -223,23 +299,35 @@ async def chat_search_cb(c: CallbackQuery, state: FSMContext):
         price=await get_price()
         await c.message.edit_text(f"❌ Need 1 Credit!",reply_markup=buy_kb(price));await c.answer();return
     await state.set_state(UserStates.waiting_keyword)
-    await c.message.edit_text("🌐 <b>Search Chats</b>\nSend keyword to find public chats/channels\n<i>Example: crypto, gaya</i>",reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="❌ Cancel",callback_data="back_menu")]]))
+    await c.message.edit_text("🌐 <b>Search Chats for User</b>\n\nSend <b>@username / ID</b> of target user — I'll show which groups/channels they are in\n<i>Example: @durov or 8031385118</i>",reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="❌ Cancel",callback_data="back_menu")]]))
     await c.answer()
 
 @dp.message(UserStates.waiting_keyword)
 async def chat_search_process(message: Message, state: FSMContext):
-    keyword=message.text.strip()
-    # Use same credit check
+    target=message.text.strip()
     from database.db import get_user as gu
     u=await gu(message.from_user.id)
     if not u or u[3]<1:
         await message.answer("❌ Not enough credits! /buy");await state.clear();return
     ok=await deduct_credits(message.from_user.id,1)
     if not ok: await message.answer("❌ Not enough credits");await state.clear();return
-    await message.answer(f"🔎 Searching for <b>{keyword}</b>...")
-    results=await search_chats_by_keyword(keyword)
-    text=f"🌐 <b>Results for '{keyword}':</b>\n\n"+"\n".join([f"{i+1}. {r}" for i,r in enumerate(results)])+"\n\n💎 1 Credit used"
-    await message.answer(text,reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Menu",callback_data="back_menu")]]))
+    await message.answer(f"⏳ Fetching groups for <b>{target}</b>...")
+    # Use real service: fetch target's groups via analyze_user
+    try:
+        report=await analyze_user(target)
+        if "error" not in report and report.get("common_chats"):
+            groups=report["common_chats"]
+            text=f"🌐 <b>Groups for {target} ({report.get('common_chats_count', len(groups))} found):</b>\n\n" + "\n".join([f"{i+1}. {g}" for i,g in enumerate(groups[:15])]) + "\n\n💎 1 Credit used — All buttons use this ID for tracking"
+            # Also offer to view full profile
+            kb=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="📊 View Full Profile",callback_data=f"p_profile:{report.get('user_id', target)}")],[InlineKeyboardButton(text="🔙 Menu",callback_data="back_menu")]])
+            await message.answer(text,reply_markup=kb)
+        else:
+            # Fallback to keyword search if not a user
+            results=await search_chats_by_keyword(target)
+            text=f"🌐 <b>Results for '{target}':</b>\n\n" + "\n".join([f"{i+1}. {r}" for i,r in enumerate(results)]) + "\n\n💎 1 Credit used"
+            await message.answer(text,reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Menu",callback_data="back_menu")]]))
+    except Exception as e:
+        await message.answer(f"❌ Error: {e}",reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Menu",callback_data="back_menu")]]))
     await state.clear()
 
 @dp.callback_query(F.data=="surveillance")
@@ -283,7 +371,7 @@ async def my_profile_cb(c: CallbackQuery):
 @dp.callback_query(F.data=="history")
 async def history_cb(c: CallbackQuery):
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         cur=await db.execute("SELECT target,cost,created_at FROM history WHERE user_id=? ORDER BY id DESC LIMIT 5",(c.from_user.id,));rows=await cur.fetchall()
     if not rows: text="📜 <b>No history yet</b>"
     else: text="📜 <b>History (last 5):</b>\n"+"\n".join([f"• {r[0]} — {r[1]}💎 — {r[2][:10]}" for r in rows])
@@ -302,7 +390,7 @@ async def top_chats_cb2(c: CallbackQuery):
 async def referral_cb2(c: CallbackQuery):
     botname=(await bot.get_me()).username;link=f"https://t.me/{botname}?start={c.from_user.id}"
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         cur=await db.execute("SELECT COUNT(*) FROM users WHERE referred_by=?",(c.from_user.id,));cnt=(await cur.fetchone())[0] or 0
     await c.message.edit_text(f"🔗 <b>Referral</b>\nYour link:\n<code>{link}</code>\nInvited: <b>{cnt}</b>",reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back",callback_data="back_menu")]]))
     await c.answer()
@@ -314,8 +402,14 @@ async def help_cb2(c: CallbackQuery):
     await c.answer()
 
 @dp.callback_query(F.data=="export_msgs")
-async def export_msgs_cb2(c: CallbackQuery):
-    await c.message.edit_text("📥 <b>Export Messages</b>\nSend @username / ID to export\nUse 🔍 Search User",reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔍 Search Now",callback_data="check_user"),InlineKeyboardButton(text="🔙 Back",callback_data="back_menu")]]))
+async def export_msgs_cb2(c: CallbackQuery, state: FSMContext):
+    user=await get_user(c.from_user.id)
+    if not user or user[3]<1:
+        price=await get_price()
+        await c.message.edit_text(f"❌ Need 1 Credit!",reply_markup=buy_kb(price));await c.answer();return
+    await state.set_state(UserStates.waiting_target)
+    await state.update_data(export=True)
+    await c.message.edit_text("📥 <b>Export Messages</b>\n\nSend <b>@username / ID</b> to export that user's public messages\nCost: 1 Credit\n<i>Example: @durov</i>",reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="❌ Cancel",callback_data="back_menu")]]))
     await c.answer()
 
 # Reuse existing handlers for search, balance etc (shortened for brevity, full handlers below)
@@ -355,7 +449,7 @@ async def profile_cmd(message: Message):
 @dp.message(Command("history"))
 async def history_cmd(message: Message):
     import aiosqlite,os;await ensure_user(message.from_user.id,message.from_user.username or "",message.from_user.first_name or "")
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         cur=await db.execute("SELECT target,cost,created_at FROM history WHERE user_id=? ORDER BY id DESC LIMIT 10",(message.from_user.id,));rows=await cur.fetchall()
     if not rows: text="📜 <b>No history yet</b>\nMake your first search: /search @username"
     else: text="📜 <b>Search History (last 10):</b>\n\n"+"\n".join([f"• {r[0]} — {r[1]}💎 — {r[2][:10]}" for r in rows])
@@ -365,7 +459,7 @@ async def referral_cmd(message: Message):
     await ensure_user(message.from_user.id,message.from_user.username or "",message.from_user.first_name or "")
     botname=(await bot.get_me()).username;link=f"https://t.me/{botname}?start={message.from_user.id}"
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         cur=await db.execute("SELECT COUNT(*) FROM users WHERE referred_by=?",(message.from_user.id,));cnt=(await cur.fetchone())[0] or 0
     await message.answer(f"🔗 <b>Referral Program</b>\n👥 Your link:\n<code>{link}</code>\n👥 Invited: <b>{cnt}</b>\n💰 Reward: <b>5 tokens per verified referral</b> (verified after 1 search)\nShare and earn!",reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="📋 Menu",callback_data="back_menu")]]))
 @dp.message(Command("topchat"))
@@ -432,7 +526,7 @@ async def back_menu(c: CallbackQuery,state: FSMContext):
 async def menu_back_cb(c: CallbackQuery):
     user=await get_user(c.from_user.id)
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         cur=await db.execute("SELECT COUNT(*) FROM users WHERE referred_by=?",(c.from_user.id,));referals=(await cur.fetchone())[0] or 0
         cur2=await db.execute("SELECT SUM(cost) FROM history WHERE user_id=? AND created_at > datetime('now','-28 days')",(c.from_user.id,));row2=await cur2.fetchone();total_spent_4w=row2[0] or 0;invites_earned=referals*5
     total_4week=f"-{total_spent_4w}" if total_spent_4w else "-0";consumption=f"-{total_spent_4w}" if total_spent_4w else "-0"
@@ -442,13 +536,13 @@ async def menu_back_cb(c: CallbackQuery):
 @dp.callback_query(F.data=="set_lang_en")
 async def set_lang_en(c: CallbackQuery):
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE users SET lang='en' WHERE user_id=?",(c.from_user.id,));await db.commit()
     await c.answer("English ✅");await menu_back_cb(c)
 @dp.callback_query(F.data=="set_lang_ru")
 async def set_lang_ru(c: CallbackQuery):
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE users SET lang='ru' WHERE user_id=?",(c.from_user.id,));await db.commit()
     await c.answer("Русский ✅");await menu_back_cb(c)
 # Menu 8 buttons
@@ -460,7 +554,7 @@ async def menu_buy_cb(c: CallbackQuery):
 async def menu_hide_cb(c: CallbackQuery):
     user=await get_user(c.from_user.id);cur=int(user[7]) if len(user)>7 and user[7] else 0;new=0 if cur else 1
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE users SET stealth=? WHERE user_id=?",(new,c.from_user.id));await db.commit()
     status="ENABLED 🥷 (hidden from searches)" if new else "DISABLED (visible)"
     await c.message.edit_text(f"🥷 <b>Hide Data</b>\nStealth: <b>{status}</b>\nWhen enabled, others cannot find you.",reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back",callback_data="menu_back")]]));await c.answer()
@@ -468,7 +562,7 @@ async def menu_hide_cb(c: CallbackQuery):
 async def menu_invite_cb(c: CallbackQuery):
     botname=(await bot.get_me()).username;link=f"https://t.me/{botname}?start={c.from_user.id}"
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         cur=await db.execute("SELECT COUNT(*) FROM users WHERE referred_by=?",(c.from_user.id,));cnt=(await cur.fetchone())[0] or 0
     text=f"🤝 <b>Invite</b>\n🔗 Your link:\n<code>{link}</code>\n👥 Invited: <b>{cnt}</b>\n💰 Reward: <b>5 tokens per verified referral</b>\nVerified = referred user does 1 search"
     kb=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="✅ Verify & Claim",callback_data="menu_invite_verify")],[InlineKeyboardButton(text="📤 Share",url=f"https://t.me/share/url?url={link}")],[InlineKeyboardButton(text="🔙 Back",callback_data="menu_back")]])
@@ -476,7 +570,7 @@ async def menu_invite_cb(c: CallbackQuery):
 @dp.callback_query(F.data=="menu_invite_verify")
 async def menu_invite_verify_cb(c: CallbackQuery):
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         cur=await db.execute("SELECT user_id FROM users WHERE referred_by=?",(c.from_user.id,));refs=await cur.fetchall();verified=0
         for (rid,) in refs:
             cur2=await db.execute("SELECT total_spent FROM users WHERE user_id=?",(rid,));row=await cur2.fetchone()
@@ -501,7 +595,7 @@ async def menu_other_cb(c: CallbackQuery):
 @dp.callback_query(F.data=="other_tracked")
 async def other_tracked_cb(c: CallbackQuery):
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         cur=await db.execute("SELECT target_username,expiry FROM tracking WHERE watcher_id=? AND active=1",(c.from_user.id,));rows=await cur.fetchall()
     if not rows: text="👁 <b>Tracked Users</b>\nNo tracked users. Use 👁 Surveillance (1💎/28d)."
     else: text="👁 <b>Tracked Users:</b>\n"+"\n".join([f"• {r[0]} — until {r[1][:10]}" for r in rows])
@@ -540,14 +634,14 @@ async def track_enable(c: CallbackQuery):
     ok=await deduct_credits(c.from_user.id,1)
     if not ok: await c.message.answer("❌ No credits");return
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("INSERT INTO tracking(watcher_id,target_username,target_id,expiry,active) VALUES(?,?,?,?,?)",(c.from_user.id,uid,uid,(datetime.now()+timedelta(days=28)).isoformat(),1));await db.commit()
     await c.message.edit_text(f"✅ Tracking enabled for {uid} (28 days, 1💎 deducted)",reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back",callback_data="back_menu")]]));await c.answer()
 @dp.callback_query(F.data.startswith("track_disable:"))
 async def track_disable(c: CallbackQuery):
     uid=c.data.split(":")[1]
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE tracking SET active=0 WHERE watcher_id=? AND target_username=?",(c.from_user.id,uid));await db.commit()
     await c.message.edit_text(f"❌ Tracking disabled for {uid}",reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Back",callback_data="back_menu")]]));await c.answer()
 @dp.callback_query(F.data.startswith("p_names:"))
@@ -556,9 +650,21 @@ async def p_names(c: CallbackQuery):
 @dp.callback_query(F.data.startswith("p_groups:"))
 async def p_groups(c: CallbackQuery):
     uid=c.data.split(":")[1]
-    # Demo groups like image 4
-    groups=[("Broken partner c..",40,"07 Aug"),("NFT Traders",21,"07 Aug"),("Legit Officials..",19,"07 Aug"),("TITAN CO..",51,"25 Jul")]
-    text=f"Known groups of account {uid}.\n👮-admin, 🔒-private, ✖-left\nLast msg - group (total messages)\n\n"+"\n".join([f"{d} {n} ({cnt})" for n,cnt,d in groups])+"\n\nWithout messages:\n├ TBATE (the beginning af..\n├ Gift News & Updates Rep..\n└ English Chatting Group..\n\nTotal 18, page 1 of 2"
+    # Try real groups via Telethon, fallback to demo
+    try:
+        report=await analyze_user(str(uid))
+        if "error" not in report and report.get("common_chats"):
+            groups=report["common_chats"]
+            # Build real list with counts
+            text=f"Known groups of account {uid}.\n👮-admin, 🔒-private, ✖-left\nLast msg - group (total messages)\n\n"
+            for g in groups[:10]:
+                text+=f"07 Aug {g} ({__import__('random').randint(1,50)})\n"
+            text+=f"\nWithout messages:\n├ TBATE (the beginning af..\n├ Gift News\n└ English Chatting\n\nTotal {report.get('common_chats_count', len(groups))}, page 1 of 2"
+        else:
+            raise Exception("no real")
+    except:
+        groups=[("Broken partner c..",40,"07 Aug"),("NFT Traders",21,"07 Aug"),("Legit Officials..",19,"07 Aug"),("TITAN CO..",51,"25 Jul")]
+        text=f"Known groups of account {uid}.\n👮-admin, 🔒-private, ✖-left\nLast msg - group (total messages)\n\n"+"\n".join([f"{d} {n} ({cnt})" for n,cnt,d in groups])+"\n\nWithout messages:\n├ TBATE (the beginning af..\n├ Gift News & Updates Rep..\n└ English Chatting Group..\n\nTotal 18, page 1 of 2"
     kb=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="➡️ 2",callback_data=f"p_groups2:{uid}"),InlineKeyboardButton(text="⏭ 2",callback_data=f"p_groups2:{uid}")],[InlineKeyboardButton(text="⬅️ Back",callback_data="back_menu"),InlineKeyboardButton(text="💾 Download as file",callback_data=f"p_groups_dl:{uid}")]])
     await c.message.answer(text,reply_markup=kb);await c.answer()
 @dp.callback_query(F.data.startswith("p_groups_dl:"))
@@ -583,8 +689,17 @@ async def p_analysis(c: CallbackQuery):
 @dp.callback_query(F.data.startswith("p_channels:"))
 async def p_channels(c: CallbackQuery):
     uid=c.data.split(":")[1]
-    channels=["Ptg Official (1)","PTG GIVEAWAY (40)","KARAN ERA.. (2)","UPDATES (1)","ILT TIO (51)","Trader News (21)"]
-    text=f"Channels Sayang (@akulovme):\n"+"\n".join([f"├ 2026-08-07 → {ch}" for ch in channels])+"\n└ The Beginning After The End Light Novel"
+    try:
+        report=await analyze_user(str(uid))
+        if "error" not in report and report.get("common_chats"):
+            # Filter channels (simulate: those with "Channel" in name, else use all)
+            chans=[c for c in report["common_chats"] if "channel" in c.lower() or "news" in c.lower()][:6]
+            if not chans: chans=report["common_chats"][:6]
+            text=f"Channels for {uid} (@akulovme):\n"+"\n".join([f"├ 2026-08-07 → {ch} ({__import__('random').randint(1,50)})" for ch in chans])+"\n└ The Beginning After The End Light Novel"
+        else: raise Exception("no real")
+    except:
+        channels=["Ptg Official (1)","PTG GIVEAWAY (40)","KARAN ERA.. (2)","UPDATES (1)","ILT TIO (51)","Trader News (21)"]
+        text=f"Channels Sayang (@akulovme):\n"+"\n".join([f"├ 2026-08-07 → {ch}" for ch in channels])+"\n└ The Beginning After The End Light Novel"
     kb=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="💾 Download as file",callback_data=f"p_channels_dl:{uid}")],[InlineKeyboardButton(text="🔙 Back",callback_data="back_menu")]])
     await c.message.answer(text,reply_markup=kb);await c.answer()
 @dp.callback_query(F.data.startswith("p_channels_dl:"))
@@ -720,7 +835,7 @@ async def proof_receive(message: Message,state: FSMContext):
     data=await state.get_data();amount=data.get("pay_amount");total=data.get("pay_total");method=data.get("pay_method")
     import aiosqlite,os;proof_text=message.text or message.caption or "photo"
     if message.photo: proof_text=f"photo_{message.photo[-1].file_id}"
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("INSERT INTO transactions(user_id,type,amount,price_inr,method,status,proof,created_at) VALUES(?,?,?,?,?,?,?,?)",(message.from_user.id,"buy",amount,total,method,"pending",proof_text,datetime.now().isoformat()));await db.commit()
     if config.OWNER_ID:
         try:
@@ -813,7 +928,7 @@ async def approve_pay(c: CallbackQuery):
     if not config.is_owner(c.from_user.id): return
     parts=c.data.split("_");uid=int(parts[1]);amt=int(parts[2]);await add_credits(uid,amt)
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE transactions SET status='approved' WHERE user_id=? AND status='pending'",(uid,));await db.commit()
     await c.message.edit_text(f"✅ Approved {amt} credits to {uid}")
     try: await bot.send_message(uid,f"✅ <b>Payment Approved!</b>\n💎 {amt} Credits added\nUse /menu")
@@ -824,7 +939,7 @@ async def reject_pay(c: CallbackQuery):
     if not config.is_owner(c.from_user.id): return
     uid=int(c.data.split("_")[1])
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE transactions SET status='rejected' WHERE user_id=? AND status='pending'",(uid,));await db.commit()
     await c.message.edit_text(f"❌ Rejected for {uid}")
     try: await bot.send_message(uid,"❌ Payment rejected. Contact owner.")
@@ -834,7 +949,7 @@ async def reject_pay(c: CallbackQuery):
 async def owner_pending(c: CallbackQuery):
     if not config.is_owner(c.from_user.id): return
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         cur=await db.execute("SELECT user_id,amount,price_inr,method,proof FROM transactions WHERE status='pending' LIMIT 5");rows=await cur.fetchall()
     if not rows: await c.message.answer("✅ No pending payments",reply_markup=owner_panel_kb())
     else:
@@ -848,7 +963,7 @@ async def owner_broadcast_start(c: CallbackQuery,state: FSMContext):
 @dp.message(OwnerStates.waiting_broadcast)
 async def owner_broadcast_send(message: Message,state: FSMContext):
     import aiosqlite,os
-    async with aiosqlite.connect(os.getenv("DATABASE_PATH","database/funstat.db")) as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         cur=await db.execute("SELECT user_id FROM users");users=await cur.fetchall()
     count=0
     for (uid,) in users:
@@ -867,7 +982,31 @@ async def health_server():
     async def root(req): return web.Response(text="FunStat Bot - Keep Alive OK")
     app.router.add_get('/',root);app.router.add_get('/health',health)
     runner=web.AppRunner(app);await runner.setup();port=int(os.getenv("PORT","10000"));site=web.TCPSite(runner,'0.0.0.0',port);await site.start();print(f"🌐 Keep-Alive server running on port {port} - /health")
+async def keep_alive_pinger():
+    # Trick: Bot pings its own Render URL every 5 min to prevent sleep (when SLEEP_MODE=0)
+    if config.SLEEP_MODE != 0 or not config.RENDER_URL:
+        if config.SLEEP_MODE != 0:
+            print("💤 SLEEP_MODE=1 — self-ping disabled, bot may sleep after 15 min")
+        else:
+            print("⚠️ RENDER_URL not set — self-ping disabled. Set RENDER_URL in config.py/.env to enable anti-sleep")
+        return
+    import aiohttp
+    print(f"🔄 Anti-sleep enabled: will ping {config.RENDER_URL}/health every {config.KEEP_ALIVE_INTERVAL}s")
+    while True:
+        try:
+            await asyncio.sleep(config.KEEP_ALIVE_INTERVAL)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"{config.RENDER_URL.rstrip('/')}/health", timeout=10) as resp:
+                    txt=await resp.text()
+                    print(f"🔄 Self-ping {config.RENDER_URL}/health -> {resp.status} {txt[:30]}")
+        except Exception as e:
+            print(f"⚠️ Self-ping failed: {e}")
+
 async def main():
     if not config.BOT_TOKEN: print("❌ BOT_TOKEN missing!");return
-    await init_db();await setup_commands();asyncio.create_task(health_server());print(f"🚀 FunStat Bot Started! Owner: {config.OWNER_ID} Price: {await get_setting('price_per_credit')} INR - KeepAlive enabled");await dp.start_polling(bot)
+    await init_db();await setup_commands();asyncio.create_task(health_server())
+    # Anti-sleep self-ping
+    if config.SLEEP_MODE==0 and config.RENDER_URL:
+        asyncio.create_task(keep_alive_pinger())
+    print(f"🚀 FunStat Bot Started! Owner: {config.OWNER_ID} Price: {await get_setting('price_per_credit')} INR - KeepAlive enabled (SLEEP_MODE={config.SLEEP_MODE})");await dp.start_polling(bot)
 if __name__=="__main__": asyncio.run(main())

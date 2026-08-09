@@ -19,6 +19,14 @@ DEFAULT_USDT_BEP20 = os.getenv("DEFAULT_USDT_BEP20", "0x...BEP20...")
 WEB_ADMIN_PORT = int(os.getenv("WEB_ADMIN_PORT", "5000"))
 WEB_ADMIN_SECRET = os.getenv("WEB_ADMIN_SECRET", "funstat-secret-2024")
 
+# === ANTI-SLEEP CONFIG ===
+# SLEEP_MODE = 0 => Bot never sleeps (self-ping enabled)
+# SLEEP_MODE = 1 => Allow sleep (Render free tier default)
+SLEEP_MODE = int(os.getenv("SLEEP_MODE", "0"))
+# Paste your Render URL here (e.g. https://funstat-bot-xxxx.onrender.com) — bot will self-ping it every 5 min to stay alive
+RENDER_URL = os.getenv("RENDER_URL", "https://fun-info-bot.onrender.com")
+KEEP_ALIVE_INTERVAL = int(os.getenv("KEEP_ALIVE_INTERVAL", "300"))  # 5 min
+
 # Feature Costs (in credits)
 COSTS = {
     "search_user": 1,      # User profile + chats + messages

@@ -1,5 +1,5 @@
 services:
-  # 🤖 Telegram Bot - Web Service (with Keep-Alive) - Never sleeps with health check
+  # 🤖 Telegram Bot - Web Service (Keep-Alive + Persistent Disk)
   - type: web
     name: funstat-bot
     env: python
@@ -9,6 +9,10 @@ services:
     startCommand: python bot.py
     healthCheckPath: /health
     autoDeploy: false
+    disk:
+      name: funstat-data
+      mountPath: /data
+      sizeGB: 1
 
   # 🌐 Dedicated Website - Static Site
   - type: web
@@ -22,7 +26,7 @@ services:
         source: /*
         destination: /index.html
 
-  # 👑 Owner Panel - Web Service
+  # 👑 Owner Panel - Web Service (also persistent)
   - type: web
     name: funstat-owner-panel
     env: python
@@ -31,3 +35,7 @@ services:
     buildCommand: pip install Flask aiosqlite python-dotenv
     startCommand: python admin_web/app.py
     healthCheckPath: /
+    disk:
+      name: funstat-panel-data
+      mountPath: /data
+      sizeGB: 1
